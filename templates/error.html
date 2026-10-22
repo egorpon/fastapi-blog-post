@@ -1,0 +1,9 @@
+{% extends "layout.html" %} {% block content %}
+<article class="content-section gap-4 py-3 px-4 mb-4 bg-body-tertiary rounded">
+  <h1>
+    <p class="article-title" href="#">Oops... {{status_code}} Error</p>
+  </h1>
+  <p class="article-content mt-3">{{message}}</p>
+</article>
+
+{% endblock content %}

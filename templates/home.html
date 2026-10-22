@@ -14,7 +14,9 @@
       <small class="text-body-secondary">{{ post.date_posted }}</small>
     </div>
     <h2>
-      <a class="article-title text-reset text-decoration-none" href="#"
+      <a
+        class="article-title text-reset link-primary text-decoration-none"
+        href="{{url_for('post', post_id=post.id)}}"
         >{{ post.title | default("Title hasn't been set")}}</a
       >
     </h2>
