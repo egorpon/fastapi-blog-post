@@ -12,7 +12,7 @@ from users.schemas import UserCreate, UserResponse
 router = APIRouter()
 
 
-@router.get(
+@router.post(
     "/api/users", response_model=UserResponse, status_code=status.HTTP_201_CREATED
 )
 def create_user(user: UserCreate, db: Annotated[Session, Depends(get_db)]):
