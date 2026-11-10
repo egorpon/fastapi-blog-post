@@ -8,6 +8,7 @@ from database import get_db
 from posts.models import Post
 from users.models import User
 from users.schemas import UserCreate, UserResponse
+from posts.schemas import PostResponse
 
 router = APIRouter()
 
@@ -50,7 +51,7 @@ def get_user(user_id: int, db: Annotated[Session, Depends(get_db)]):
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
 
-@router.get("/api/users/{user_id}/posts", response_model=UserResponse)
+@router.get("/api/users/{user_id}/posts", response_model=list[PostResponse])
 def get_user_posts(user_id: int, db: Annotated[Session, Depends(get_db)]):
     result = db.execute(select(User).where(User.id == user_id))
     user = result.scalars().first()

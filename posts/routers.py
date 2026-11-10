@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from posts.models import Post
-from posts.schemas import PostCreate, PostResponse
+from posts.schemas import PostCreate, PostUpdate, PostResponse
 from users.models import User
 
 router = APIRouter()
@@ -17,6 +17,15 @@ def get_posts(db: Annotated[Session, Depends(get_db)]):
     result = db.execute(select(Post))
     posts = result.scalars().all()
     return posts
+
+
+@router.get("/api/post/{post_id}", response_model=PostResponse)
+def get_post(post_id: int, db: Annotated[Session, Depends(get_db)]):
+    result = db.execute(select(Post).where(Post.id == post_id))
+    post = result.scalars().first()
+    if post:
+        return post
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
 
 
 @router.post(
@@ -38,10 +47,68 @@ def create_post(post: PostCreate, db: Annotated[Session, Depends(get_db)]):
     return new_post
 
 
-@router.get("/api/post/{post_id}", response_model=PostResponse)
-def get_post(post_id: int, db: Annotated[Session, Depends(get_db)]):
+@router.put("/api/post/{post_id}", response_model=PostResponse)
+def update_post_full(
+    post_id: int,
+    post_data: PostCreate,
+    db: Annotated[Session, Depends(get_db)],
+):
     result = db.execute(select(Post).where(Post.id == post_id))
     post = result.scalars().first()
-    if post:
-        return post
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
+    if not post:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Post not found"
+        )
+
+    if post_data.user_id != post.user_id:
+        result = db.execute(select(User).where(User.id == post_data.user_id))
+    user = result.scalars().first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+
+    post.title = post_data.title
+    post.content = post_data.content
+    post.user_id = post_data.user_id
+
+    db.commit()
+    db.refresh(post)
+
+    return post
+
+
+@router.patch("/api/post/{post_id}", response_model=PostResponse)
+def update_post_partial(
+    post_id: int,
+    post_data: PostUpdate,
+    db: Annotated[Session, Depends(get_db)],
+):
+    result = db.execute(select(Post).where(Post.id == post_id))
+    post = result.scalars().first()
+    if not post:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Post not found"
+        )
+
+    update_data = post_data.model_dump(exclude_unset=True)
+
+    for field, value in update_data.items():
+        setattr(post, field, value)
+
+    db.commit()
+    db.refresh(post)
+
+    return post
+
+
+@router.delete("/api/post/{post_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_post(post_id: int, db: Annotated[Session, Depends(get_db)]):
+    result = db.execute(select(Post).where(Post.id == post_id))
+    post = result.scalars().first()
+    if not post:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Post not found"
+        )
+    db.delete(post)
+    db.commit()
